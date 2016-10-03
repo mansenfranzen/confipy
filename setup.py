@@ -9,5 +9,7 @@ setup(
     author='Franz Woellert',
     author_email='franz.woellert@gmail.com',
     description='A convenient config file reader.',
-    install_requires=['PyYAML']
+    install_requires=['PyYAML'],
+    download_url = 'https://github.com/mansenfranzen/confipy/tarball/0.0.1',
+    keywords = ['config', 'yaml']
 )
