@@ -1,6 +1,7 @@
 """This module contains tests"""
 
 import pytest
+import confipy.converter
 import confipy.reader
 import confipy.parser
 
@@ -28,7 +29,7 @@ test_subs = {("key1",): "value1", ("key2",): "value2",
 
 def test_flatten_dict():
     cfg = confipy.reader.read_config("material/skeleton_dummy.yaml")
-    skeleton = confipy.parser._flatten_dict(cfg)
+    skeleton = confipy.converter._flat_dict(cfg)
 
     assert skeleton == test_flattened_dict
 
@@ -36,7 +37,7 @@ def test_flatten_dict():
 def test_include():
     file = "material/include_dummy.yaml"
     cfg = confipy.reader.read_config(file)
-    skeleton = confipy.parser._flatten_dict(cfg)
+    skeleton = confipy.converter._flat_dict(cfg)
     included = confipy.parser.include(skeleton, file)
 
     assert included == test_incl
@@ -45,7 +46,7 @@ def test_include():
 def test_include_lvl2():
     file = "material/include_dummy_lvl2.yaml"
     cfg = confipy.reader.read_config(file)
-    skeleton = confipy.parser._flatten_dict(cfg)
+    skeleton = confipy.converter._flat_dict(cfg)
     included = confipy.parser.include(skeleton, file)
 
     assert included == test_incl_lvl2
@@ -54,7 +55,7 @@ def test_include_lvl2():
 def test_include_fail():
     file = "material/include_fail.yaml"
     cfg = confipy.reader.read_config(file)
-    skeleton = confipy.parser._flatten_dict(cfg)
+    skeleton = confipy.converter._flat_dict(cfg)
 
     with pytest.raises(AssertionError):
         included = confipy.parser.include(skeleton, file)
@@ -63,15 +64,25 @@ def test_include_fail():
 def test_substitute():
     file = "material/substitute_dummy.yaml"
     cfg = confipy.reader.read_config(file)
-    skeleton = confipy.parser._flatten_dict(cfg)
+    skeleton = confipy.converter._flat_dict(cfg)
     subs = confipy.parser.substitute(skeleton)
 
     assert subs == test_subs
 
 
 def test_unflatten():
-    unflatten = confipy.parser._unflatten_dict(test_incl_lvl2)
+    unflatten = confipy.converter._unflat_dict(test_incl_lvl2)
     assert unflatten == test_incl_lvl2_unflattend
+
+
+def test_unflatten_dot():
+    def_type = confipy.converter.DotNotation
+    unflatten = confipy.converter._unflat_dict(test_incl_lvl2,
+                                               default_type=def_type)
+
+    assert isinstance(unflatten, def_type) == True
+    assert unflatten.Key1 == "Value1"
+
 
 if __name__ == "__main__":
     test_flatten_dict()
@@ -80,3 +91,4 @@ if __name__ == "__main__":
     test_include_fail()
     test_substitute()
     test_unflatten()
+    test_unflatten_dot()
