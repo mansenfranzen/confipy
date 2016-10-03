@@ -43,6 +43,45 @@ def _flatten_dict(cfg_dict, parent=None):
     return flattened
 
 
+def _unflatten_dict(flattened_dict, unflattened_dict=None):
+    """Convert flattened dict back to nested dict structure.
+
+    Parameters
+    ----------
+    flattened_dict: dict
+        See _flatten_dict() for more information.
+    unflattened_dict: None, dict
+        Parameter is used as parent dictionary.
+
+    Return
+    ------
+    unflattend_dict: dict
+
+    """
+
+    if not unflattened_dict:
+        unflattened_dict = {}
+
+    # iterate, begin with lowest depth
+    sorted_items = sorted(flattened_dict.items(), key=lambda x: len(x[0]))
+    for key_chain, value in sorted_items:
+        this_key = key_chain[0]
+        # directly set value, if only one key is present
+        if len(key_chain)== 1:
+            unflattened_dict[this_key] = value
+            continue
+
+        # if key exists, do not create again
+        key_exists = unflattened_dict.get(this_key)
+        if key_exists:
+            _unflatten_dict({key_chain[1:]: value}, key_exists)
+            continue
+
+        unflattened_dict[this_key] = _unflatten_dict({key_chain[1:]: value})
+
+    return unflattened_dict
+
+
 def include(flattened_dict, source_path, marker="$include"):
     """Scan config dictionary for include statements. Load and insert
     referenced config files under corresponding key's namespace.
