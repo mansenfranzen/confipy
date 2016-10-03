@@ -1,85 +1,33 @@
 """This module contains the config parser functions."""
 
 import os
+
 import confipy.reader
+import confipy.converter
 
 ERR_CFG_NOT_FOUND = "Cannot find referenced config '{}'."
 
 
-def _flatten_dict(cfg_dict, parent=None):
-    """Convert nested dictionary into flattened dict of key-chain
-    value pairs where the key-chain is a tuple of nested keys.
+def parsing_handler(parsers, cfg, source_path=None, splitter=" + ",
+                    marker="$", **kwargs):
+    """Manages processing of all parsers. Handles relevant arguments and
+    keyword arguments to correct parser functions.
 
-    For example, {"key1": {"key11":{"key111": "value1"}}}
-    evaluates to  {("key1", "key11", "key111"): "value1"}.
-
-    Simplifies dictionary operations for other parser functions.
-
-    Parameters
-    ----------
-    cfg_dict: dict
-        Dictionary containing config data.
-    parent: None, optional
-        For nested, recursive calls remembers the parent of current level.
-
-    Return
-    ------
-    flattened: dict
+    Returns flattened, parsed config data.
 
     """
 
-    if not parent:
-        parent = []
+    # parser_name: (func, args, kwargs)
+    parsers_opt = {"include": (include, [source_path], {}),
+                   "substitute": (substitute, [], {"splitter": splitter,
+                                                   "marker": marker})}
 
-    flattened = {}
-    for key, value in cfg_dict.items():
-        key_level = parent + [key]
-        if isinstance(value, dict):
-            flattened.update(_flatten_dict(value, key_level))
-        else:
-            key_chain = tuple(key_level)
-            flattened[key_chain] = value
+    parsed_cfg = confipy.converter._flat_dict(cfg)
+    for parser in parsers:
+        func, args, kwargs = parsers_opt[parser]
+        parsed_cfg = func(parsed_cfg, *args, **kwargs)
 
-    return flattened
-
-
-def _unflatten_dict(flattened_dict, unflattened_dict=None):
-    """Convert flattened dict back to nested dict structure.
-
-    Parameters
-    ----------
-    flattened_dict: dict
-        See _flatten_dict() for more information.
-    unflattened_dict: None, dict
-        Parameter is used as parent dictionary.
-
-    Return
-    ------
-    unflattend_dict: dict
-
-    """
-
-    if not unflattened_dict:
-        unflattened_dict = {}
-
-    # iterate, begin with lowest depth
-    sorted_items = sorted(flattened_dict.items(), key=lambda x: len(x[0]))
-    for key_chain, value in sorted_items:
-        this_key = key_chain[0]
-        # directly set value, if only one key is present
-        if len(key_chain)== 1:
-            unflattened_dict[this_key] = value
-            continue
-
-        # if key exists, do not create again
-        key_exists = unflattened_dict.get(this_key)
-        if key_exists:
-            _unflatten_dict({key_chain[1:]: value}, key_exists)
-            continue
-
-        unflattened_dict[this_key] = _unflatten_dict({key_chain[1:]: value})
-
-    return unflattened_dict
+    return parsed_cfg
 
 
 def include(flattened_dict, source_path, marker="$include"):
@@ -117,10 +65,10 @@ def include(flattened_dict, source_path, marker="$include"):
         else:
             raise AssertionError(ERR_CFG_NOT_FOUND.format(absolute_path))
 
-        include_cfg = confipy.reader.read_config(path)
-        include_flattened = _flatten_dict(include_cfg, list(key_chain))
-        include_included = include(include_flattened, path)
-        parsed_dict.update(include_included)
+        inc_cfg = confipy.reader.read_config(path)
+        inc_flat = confipy.converter._flat_dict(inc_cfg, list(key_chain))
+        inc_included = include(inc_flat, path)
+        parsed_dict.update(inc_included)
 
     return parsed_dict
 
@@ -155,7 +103,7 @@ def substitute(to_parse, parsed=None, splitter=" + ", marker="$"):
 
     # if there's nothing yet, find all non-subs items
     if not parsed:
-        parsed = {key:value for key, value in to_parse.items()
+        parsed = {key: value for key, value in to_parse.items()
                   if not _contains(value, splitter)}
         to_parse = {key: value for key, value in to_parse.items()
                     if key in set(parsed) ^ set(to_parse)}
