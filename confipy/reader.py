@@ -1,9 +1,14 @@
 """This module contains the config reader."""
 
 import yaml
-import configparser
 import json
 import collections
+
+# python 2.7
+try:
+    import configparser
+except ImportError:
+    import ConfigParser as configparser
 
 
 def _read_configparser(fp):
@@ -22,7 +27,13 @@ def _read_configparser(fp):
     """
 
     cfg_parser = configparser.ConfigParser()
-    cfg_parser.read_file(fp)
+
+    # python 2.7
+    try:
+        cfg_parser.read_file(fp)
+    except AttributeError:
+        cfg_parser.readfp(fp)
+
     cfg_dict = {section: dict(cfg_parser.items(section))
                 for section in cfg_parser.sections()}
     return cfg_dict
