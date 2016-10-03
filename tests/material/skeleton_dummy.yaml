@@ -1,0 +1,9 @@
+# Dummy for skeleton test
+# {("level1", "level2", "level3", "key1"): "value1",
+#  ("level1", "level2", "level3", "key2"): "value2"}
+
+level1:
+  level2:
+    level3:
+      key1: value1
+      key2: value2

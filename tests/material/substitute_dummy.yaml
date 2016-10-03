@@ -1,0 +1,12 @@
+key1: value1
+key2: value2
+
+list1:
+  - $key1 + $key2
+  - pre + $key1 + suf
+
+lvl1:
+   lvl2:
+      key1: value3rd
+
+check: $lvl1.lvl2.key1 + .txt
