@@ -7,22 +7,20 @@ ERR_CFG_NOT_FOUND = "Cannot find referenced config '{}'."
 
 
 def _flatten_dict(cfg_dict, parent=None):
-    """Convert nested dictionary into a flattened dict of key-chain
+    """Convert nested dictionary into flattened dict of key-chain
     value pairs where the key-chain is a tuple of nested keys.
 
     For example, {"key1": {"key11":{"key111": "value1"}}}
     evaluates to  {("key1", "key11", "key111"): "value1"}.
 
-    By doing so, other functions can operate on a non-nested dictionary more
-    easily.
+    Simplifies dictionary operations for other parser functions.
 
     Parameters
     ----------
     cfg_dict: dict
         Dictionary containing config data.
     parent: None, optional
-        For nested, recursive calls, remembers the parent the current level
-        originated from.
+        For nested, recursive calls remembers the parent of current level.
 
     Return
     ------
@@ -47,7 +45,7 @@ def _flatten_dict(cfg_dict, parent=None):
 
 def include(flattened_dict, source_path, marker="$include"):
     """Scan config dictionary for include statements. Load and insert
-    referenced config files under corresponding keys namespace.
+    referenced config files under corresponding key's namespace.
 
     Parameters
     ----------
@@ -85,7 +83,6 @@ def include(flattened_dict, source_path, marker="$include"):
         include_included = include(include_flattened, path)
         parsed_dict.update(include_included)
 
-
     return parsed_dict
 
 
@@ -94,7 +91,7 @@ def substitute(to_parse, parsed=None, splitter=" + ", marker="$"):
     containing the splitter are taken into account. Splitted values must have
     keys which begin with the marker sign. Otherwise, keys are ignored.
 
-    Function calls itself recursively until to_parse is empty.
+    The function calls itself recursively until to_parse is empty.
 
     Parameters
     ----------
@@ -129,18 +126,11 @@ def substitute(to_parse, parsed=None, splitter=" + ", marker="$"):
         if isinstance(value, str):
             valid = _substitue_value(value, parsed, splitter, marker)
         else:
-            valid = []
-            for element in value:
-                if not _contains(element, splitter):
-                    valid.append(element)
-                    continue
+            valid = [_substitue_value(element, parsed, splitter, marker)
+                     if _contains(element, splitter) else element
+                     for element in value]
 
-                complete = _substitue_value(element, parsed, splitter, marker)
-                if not complete:
-                    valid = False
-                    break
-                valid.append(complete)
-        if valid:
+        if all(valid):
             del to_parse[key]
             parsed[key] = valid
 
