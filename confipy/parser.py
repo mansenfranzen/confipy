@@ -8,29 +8,35 @@ import confipy.converter
 ERR_CFG_NOT_FOUND = "Cannot find referenced config '{}'."
 
 
-def parsing_handler(parsers, cfg, source_path=None, splitter=" + ",
-                    marker="$", **kwargs):
-    """Manages processing of all parsers. Handles relevant arguments and
-    keyword arguments to correct parser functions.
+def parsing_handler(parsers, cfg, **kwargs):
+    """Delegates positional and keyword arguments to parser functions.
+    Returns parsed config as flattend dictionary.
 
-    Returns flattened, parsed config data.
+    Parameters
+    ----------
+    parsers: iterable
+        Parser names be executed sequentially.
+    cfg: dict
+        Config data as dictionary.
+
+    Return
+    ------
+    parsed_cfg: dict
+        Flattened dictionary.
 
     """
 
-    # parser_name: (func, args, kwargs)
-    parsers_opt = {"include": (include, [source_path], {}),
-                   "substitute": (substitute, [], {"splitter": splitter,
-                                                   "marker": marker})}
-
+    parsers_opt = {"include": include,
+                   "substitute": substitute}
     parsed_cfg = confipy.converter._flat_dict(cfg)
+
     for parser in parsers:
-        func, args, kwargs = parsers_opt[parser]
-        parsed_cfg = func(parsed_cfg, *args, **kwargs)
+        parsed_cfg = parsers_opt[parser](parsed_cfg, **kwargs)
 
     return parsed_cfg
 
 
-def include(flattened_dict, source_path, marker="$include"):
+def include(flattened_dict, source_path=None, marker="$include", **kwargs):
     """Scan config dictionary for include statements. Load and insert
     referenced config files under corresponding key's namespace.
 
@@ -77,7 +83,7 @@ def include(flattened_dict, source_path, marker="$include"):
     return parsed_dict
 
 
-def substitute(to_parse, parsed=None, splitter=" + ", marker="$"):
+def substitute(to_parse, parsed=None, splitter=" + ", marker="$", **kwargs):
     """Find keys identified by splitter and marker signs. Only values
     containing the splitter are taken into account. Splitted values must have
     keys which begin with the marker sign. Otherwise, keys are ignored.
