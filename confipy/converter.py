@@ -74,7 +74,7 @@ def _unflat_dict(flat_dict, unflat_dict=None, default_type=dict):
     unflattend_dict: dict
 
     """
-    print(flat_dict)
+
     if not unflat_dict:
         unflat_dict = default_type()
 
