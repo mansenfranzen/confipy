@@ -1,3 +1,9 @@
+.. image:: https://coveralls.io/repos/github/mansenfranzen/confipy/badge.svg
+    :target: https://coveralls.io/github/mansenfranzen/confipy
+
+.. image:: https://travis-ci.org/mansenfranzen/confipy.svg?branch=master
+    :target: https://travis-ci.org/mansenfranzen/confipy
+
 confipy
 =======
 A convenient config file reader
