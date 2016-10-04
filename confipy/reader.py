@@ -11,6 +11,22 @@ except ImportError:
     import ConfigParser as configparser
 
 
+def _construct_unicode(self, node):
+    """Override the default string handling function to always return unicode
+    objects. Required for Python 2.7.
+
+    Thanks to:
+
+    http://stackoverflow.com/questions/2890146/how-to-force-pyyaml-to-load-strings-as-unicode-objects
+
+    """
+    return self.construct_scalar(node)
+
+
+yaml.Loader.add_constructor(u'tag:yaml.org,2002:str', _construct_unicode)
+yaml.SafeLoader.add_constructor(u'tag:yaml.org,2002:str', _construct_unicode)
+
+
 def _read_configparser(fp):
     """Read configparser compliant config file from file like object.
 
