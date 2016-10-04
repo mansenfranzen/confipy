@@ -1,7 +1,7 @@
 """This module contains the config parser functions."""
 
 import os
-
+import six
 import confipy.reader
 import confipy.converter
 
@@ -51,7 +51,11 @@ def include(flattened_dict, source_path, marker="$include"):
     parsed_dict = {}
 
     for key_chain, value in flattened_dict.items():
-        if not value.startswith(marker):
+        try:
+            if not value.startswith(marker):
+                parsed_dict[key_chain] = value
+                continue
+        except AttributeError:
             parsed_dict[key_chain] = value
             continue
 
@@ -110,7 +114,7 @@ def substitute(to_parse, parsed=None, splitter=" + ", marker="$"):
 
     # iterate items to be parsed; distinguish strings and lists
     for key, value in to_parse.copy().items():
-        if isinstance(value, str):
+        if isinstance(value, six.string_types):
             valid = _substitue_value(value, parsed, splitter, marker)
         else:
             valid = [_substitue_value(element, parsed, splitter, marker)
@@ -155,7 +159,7 @@ def _substitue_value(value, parsed, splitter, marker):
         parsed_value = parsed.get(key_chain)
 
         if not parsed_value:
-            return False
+            return [False]
 
         parsed_item += parsed_value
 
@@ -178,12 +182,14 @@ def _contains(values, splitter):
 
     """
 
-    if isinstance(values, str):
+    if isinstance(values, six.string_types):
         values = (values,)
 
-    if any([splitter in x for x in values]):
-        return True
-    else:
+    try:
+        if any([splitter in x for x in values]):
+            return True
+        return False
+    except TypeError:
         return False
 
 
