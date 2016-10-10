@@ -4,12 +4,9 @@ import confipy.reader
 import confipy.converter
 import confipy.parser
 
-converter_opts = {"dot": confipy.converter.DotNotation,
-                  "dict": dict}
-
 
 def load(path_or_fp, read_engine="auto", parsers=("include", "substitute"),
-         converter="dot", **kwargs):
+         notation="dot", **kwargs):
     """Main function to initiate reading, parsing and conversion.
 
     Parameters
@@ -21,23 +18,26 @@ def load(path_or_fp, read_engine="auto", parsers=("include", "substitute"),
         type is used to infer the correct read engine.
     parsers: iterable, optional
         Define parsers to be run on raw config data. Be aware, order matters.
-    converter: {"dot", "dict"}, optional
+    notation: {"dot", "dict"}, optional
         Define output type of config data. By default, config data provided in
         dot notation.
 
     Returns
     -------
-    converted_cfg: {confipy.converter.DotNotation, dict}
+    converted_cfg: {DotNotation, dict}
 
     """
 
     read_cfg = confipy.reader.read_config(path_or_fp, read_engine=read_engine)
-    parsed_cfg = confipy.parser.parsing_handler(parsers, read_cfg,
+
+    flatten_cfg = confipy.converter._flat_dict(read_cfg, notation=notation)
+
+    parsed_cfg = confipy.parser.parsing_handler(parsers,
+                                                flatten_cfg,
                                                 source_path=path_or_fp,
                                                 **kwargs)
 
-    conv_type = converter_opts[converter]
     converted_cfg = confipy.converter._unflat_dict(parsed_cfg,
-                                                   default_type=conv_type)
+                                                   notation=notation)
 
     return converted_cfg
