@@ -1,70 +1,13 @@
 """This module contains converter functions."""
 
-class DotNotation(object):
-    """Enables dot notation for accessing config properties. This class does
-    not inherit from dict on purpose in order to prevent namespace clashes.
-    Therefore, only operator overloading methods are used which are unlikely
-    to clash with variable names from config files.
+import six
+import confipy.notation
 
-    """
-
-    def __getitem__(self, key):
-        """Support bracketing attribute access. It is required to access
-        attributes with builtin names like 'except'."""
-        return getattr(self, key)
-
-    def __setitem__(self, key, value):
-        """Support bracketing attribute setting."""
-        setattr(self, key, value)
-
-    def __call__(self, ret="val", key=None, default=None):
-        """Return specific attributes of the DotNotation instance.
-
-        Parameters
-        ----------
-        ret: {"val", "dot", "dict", "get"}
-            Define the return value. 'val' refers to attributes which are not
-            DotNotation instances (therefore being str/lists by default).
-            'dot' refers to attributes which are DotNotation instances. 'dict'
-            provides the possibility to return itself as a dictionary. 'get'
-            mimics the default dict.get() method. It returns the attribute if
-            present. Otherwise returns the 'default' parameter.
-
-        """
-
-        if ret == "val":
-            return {key: value for key, value in vars(self).items()
-                    if not isinstance(value, DotNotation)}
-
-        elif ret == "dot":
-            return {key: value for key, value in vars(self).items()
-                    if isinstance(value, DotNotation)}
-
-        elif ret == "dict":
-            res_dict = {}
-            for key, value in vars(self).items():
-                if isinstance(value, self.__class__):
-                    res_dict[key] = value("dict")
-                    continue
-                res_dict[key] = value
-            return res_dict
-
-        elif ret == "get":
-            if hasattr(self, key):
-                return getattr(self, key)
-            else:
-                return default
+NOTATION_TYPES = {"dot": confipy.notation.DotNotation,
+                  "dict": dict}
 
 
-    def __repr__(self):
-        """Return string representation."""
-        tpl = "CfgNode: {} nodes ({}) / {} values ({})"
-        nodes = self("dot").keys()
-        values = self("val").keys()
-        return tpl.format(len(nodes), nodes, len(values), values)
-
-
-def _unflat_dict(flat_dict, unflat_dict=None, default_type=dict):
+def _unflat_dict(flat_dict, unflat_dict=None, notation="dict"):
     """Convert flattened dict back to nested dict structure.
 
     Parameters
@@ -73,6 +16,9 @@ def _unflat_dict(flat_dict, unflat_dict=None, default_type=dict):
         See _flatten_dict() for more information.
     unflat_dict: None, dict
         Parameter is used as parent dictionary.
+    notation: {"dict", "dot"}, optional
+        Provide notation type into which the unflattened dictionary will be
+        converted to.
 
     Return
     ------
@@ -81,7 +27,8 @@ def _unflat_dict(flat_dict, unflat_dict=None, default_type=dict):
     """
 
     if not unflat_dict:
-        unflat_dict = default_type()
+        notation_type = NOTATION_TYPES[notation]
+        unflat_dict = notation_type()
 
     # iterate, begin with lowest depth
     sorted_items = sorted(flat_dict.items(), key=lambda x: len(x[0]))
@@ -92,23 +39,24 @@ def _unflat_dict(flat_dict, unflat_dict=None, default_type=dict):
             unflat_dict[this_key] = value
             continue
 
-        # if key exists, do not create again
+        # check for existing key and account for DotNotation
         try:
-            key_exists = unflat_dict.get(this_key)
-        except AttributeError:
-            key_exists = unflat_dict("get", this_key)
+            key_exists = unflat_dict[this_key]
+        except (AttributeError, KeyError):
+            key_exists = None
 
+        # if key exists, do not create again
         if key_exists:
-            _unflat_dict({key_chain[1:]: value}, key_exists, default_type)
+            _unflat_dict({key_chain[1:]: value}, key_exists, notation)
             continue
 
         unflat_dict[this_key] = _unflat_dict({key_chain[1:]: value},
-                                             default_type=default_type)
+                                             notation=notation)
 
     return unflat_dict
 
 
-def _flat_dict(cfg_dict, parent=None):
+def _flat_dict(cfg_dict, parent=None, notation="dict"):
     """Convert nested dictionary into flattened dict of key-chain
     value pairs where the key-chain is a tuple of nested keys.
 
@@ -123,6 +71,12 @@ def _flat_dict(cfg_dict, parent=None):
         Dictionary containing config data.
     parent: None, optional
         For nested, recursive calls remembers the parent of current level.
+    notation: {"dict", "dot"}, optional
+        Provide notation type into which the unflattened dictionary will be
+        converted by _unflat_dict later on. This information is required here
+        because keys which are not strings cannot be used as attribute names
+        for the DotNotation. Therefore, dictionaries containing non-string
+        keys are not converted to DotNotation.
 
     Return
     ------
@@ -133,11 +87,18 @@ def _flat_dict(cfg_dict, parent=None):
     if not parent:
         parent = []
 
+    # check for non string keys for dot notation
+    if notation == "dot":
+        if not all([isinstance(x, six.string_types) for x in cfg_dict.keys()]):
+            return {tuple(parent):cfg_dict}
+
     flattened = {}
     for key, value in cfg_dict.items():
         key_level = parent + [key]
+
+        # unflat nested dictionaries
         if isinstance(value, dict):
-            flattened.update(_flat_dict(value, key_level))
+            flattened.update(_flat_dict(value, key_level, notation))
         else:
             key_chain = tuple(key_level)
             flattened[key_chain] = value
