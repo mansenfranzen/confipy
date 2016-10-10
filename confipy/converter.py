@@ -7,11 +7,11 @@ class DotNotation(object):
     to clash with variable names from config files.
 
     """
-    
+
     def __getitem__(self, key):
-        """Support bracketing attribute access. It is required to access 
+        """Support bracketing attribute access. It is required to access
         attributes with builtin names like 'except'."""
-        return getattr(key)
+        return getattr(self, key)
 
     def __setitem__(self, key, value):
         """Support bracketing attribute setting."""
