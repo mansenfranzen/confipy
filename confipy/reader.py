@@ -60,6 +60,7 @@ READER = collections.OrderedDict({"yaml": yaml.load,
                                   "json": json.load})
 
 MIME_TYPES = {"yaml": READER["yaml"],
+              "yml": READER["yaml"],
               "ini": READER["configparser"],
               "cfg": READER["configparser"],
               "json": READER["json"]}
