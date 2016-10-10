@@ -8,16 +8,16 @@ import confipy.converter
 ERR_CFG_NOT_FOUND = "Cannot find referenced config '{}'."
 
 
-def parsing_handler(parsers, cfg, **kwargs):
+def parsing_handler(parsers, flattened_dict, **kwargs):
     """Delegates positional and keyword arguments to parser functions.
-    Returns parsed config as flattend dictionary.
+    Returns parsed config as flattened dictionary.
 
     Parameters
     ----------
     parsers: iterable
-        Parser names be executed sequentially.
-    cfg: dict
-        Config data as dictionary.
+        Parser names which are executed sequentially.
+    flattened_dict: dict
+        Config data as flattened dictionary.
 
     Return
     ------
@@ -28,10 +28,9 @@ def parsing_handler(parsers, cfg, **kwargs):
 
     parsers_opt = {"include": include,
                    "substitute": substitute}
-    parsed_cfg = confipy.converter._flat_dict(cfg)
 
     for parser in parsers:
-        parsed_cfg = parsers_opt[parser](parsed_cfg, **kwargs)
+        parsed_cfg = parsers_opt[parser](flattened_dict, **kwargs)
 
     return parsed_cfg
 
@@ -45,7 +44,9 @@ def include(flattened_dict, source_path=None, marker="$include", **kwargs):
     flattened_dict: dict
         Flattened dictionary containing config data.
     source_path: str
-        Path to original config file.
+        Path to original config file. Necessary for relative includes.
+    marker: str, optional
+        Set keyword to define include values.
 
     Return
     ------
@@ -68,6 +69,7 @@ def include(flattened_dict, source_path=None, marker="$include", **kwargs):
         absolute_path = value.replace(marker, "").lstrip().rstrip()
         relative_path = os.path.join(cwd, absolute_path)
 
+        # check relative path first, if not found, absolute path second
         if os.path.exists(relative_path):
             path = relative_path
         elif os.path.exists(absolute_path):
@@ -75,6 +77,7 @@ def include(flattened_dict, source_path=None, marker="$include", **kwargs):
         else:
             raise AssertionError(ERR_CFG_NOT_FOUND.format(absolute_path))
 
+        # load, flatten and include referenced config under its own namespace
         inc_cfg = confipy.reader.read_config(path)
         inc_flat = confipy.converter._flat_dict(inc_cfg, list(key_chain))
         inc_included = include(inc_flat, path)
