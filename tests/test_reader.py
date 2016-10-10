@@ -26,7 +26,7 @@ test_dict = {
 
 
 def test_cfg_reader():
-    cfg = confipy.reader.read_config(get_file("material/dummy.cfg"))
+    cfg = confipy.reader.read_config(get_file("material/reader_cfg.cfg"))
 
     # as lists are not supported here, they need to be converted
     list_int = list(map(int, cfg["DummySection1"]["list_int"].split(",")))
@@ -39,7 +39,7 @@ def test_cfg_reader():
 
 
 def test_ini_reader():
-    cfg = confipy.reader.read_config(get_file("material/dummy.ini"))
+    cfg = confipy.reader.read_config(get_file("material/reader_ini.ini"))
 
     # as lists are not supported here, they need to be converted
     list_int = list(map(int, cfg["DummySection1"]["list_int"].split(",")))
@@ -52,23 +52,23 @@ def test_ini_reader():
 
 
 def test_yaml_reader():
-    cfg = confipy.reader.read_config(get_file("material/dummy.yaml"))
+    cfg = confipy.reader.read_config(get_file("material/reader_yaml.yaml"))
     assert cfg == test_dict
 
 
 def test_json_reader():
-    cfg = confipy.reader.read_config(get_file("material/dummy.json"))
+    cfg = confipy.reader.read_config(get_file("material/reader_json.json"))
     assert cfg == test_dict
 
 
 def test_auto_read():
-    with open(get_file("material/dummy.yaml"), "r") as file:
+    with open(get_file("material/reader_yaml.yaml"), "r") as file:
         cfg = confipy.reader.read_config(file)
 
     assert cfg == test_dict
 
 
-    with open(get_file("material/dummy.json"), "r") as file:
+    with open(get_file("material/reader_json.json"), "r") as file:
         cfg = confipy.reader.read_config(file)
 
     assert cfg == test_dict
@@ -76,7 +76,7 @@ def test_auto_read():
 
 def test_auto_read_fail():
     with pytest.raises(IOError):
-        with open(get_file("material/dummy_bad.cfg"), "r") as file:
+        with open(get_file("material/reader_raiseError.cfg"), "r") as file:
             cfg = confipy.reader.read_config(file)
 
 
