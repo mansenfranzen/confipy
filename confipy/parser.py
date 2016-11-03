@@ -31,7 +31,7 @@ def parsing_handler(parsers, flattened_dict, **kwargs):
     
     parsed_cfg = flattened_dict.copy()
     for parser in parsers:
-        parsed_cfg = parsers_opt[parser](flattened_dict, **kwargs)
+        parsed_cfg = parsers_opt[parser](parsed_cfg, **kwargs)
 
     return parsed_cfg
 
