@@ -25,10 +25,11 @@ def parsing_handler(parsers, flattened_dict, **kwargs):
         Flattened dictionary.
 
     """
-
+    
     parsers_opt = {"include": include,
                    "substitute": substitute}
-
+    
+    parsed_cfg = flattened_dict.copy()
     for parser in parsers:
         parsed_cfg = parsers_opt[parser](flattened_dict, **kwargs)
 
