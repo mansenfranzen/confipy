@@ -17,7 +17,7 @@ class PyTest(TestCommand):
 
 setup(
     name='confipy',
-    version='0.0.1',
+    version='0.0.3',
     packages=['confipy'],
     url='https://github.com/mansenfranzen/confipy',
     license='MIT',
@@ -25,7 +25,7 @@ setup(
     author_email='franz.woellert@gmail.com',
     description='A convenient config file reader.',
     install_requires=['PyYAML', 'six'],
-    download_url = 'https://github.com/mansenfranzen/confipy/tarball/0.0.1',
+    download_url = 'https://github.com/mansenfranzen/confipy/archive/0.0.3.tar.gz',
     keywords = ['config', 'yaml'],
     tests_require=['pytest'],
     cmdclass={'test': PyTest}
